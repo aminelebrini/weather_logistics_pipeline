@@ -1,0 +1,43 @@
+@startuml Weather_Logistics_Use_Cases
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Operational Manager" as Manager << Human >>
+actor "Apache Airflow" as Airflow << System >>
+actor "Open-Meteo API" as API << External System >>
+
+rectangle "Weather Risk Logistics System" {
+
+    package "Pipeline Orchestration" {
+        usecase "UC1: Extract Weather Data" as UC1
+        usecase "UC2: Transform & Clean Data" as UC2
+        usecase "UC3: Compute Risk Score & Load" as UC3
+        usecase "UC4: Handle API Retries" as UC4
+    }
+
+    package "Decision Making & Analytics" {
+        usecase "UC5: View Risk Dashboard" as UC5
+        usecase "UC6: Filter Risks by City & Date" as UC6
+        usecase "UC7: Run Operational Queries" as UC7
+    }
+}
+
+' Airflow Connections
+Airflow --> UC1
+Airflow --> UC2
+Airflow --> UC3
+
+' API Connection
+UC1 ..> API : << fetches weather >>
+UC1 .> UC4 : << include >>
+
+' Manager Connections
+Manager --> UC5
+Manager --> UC6
+Manager --> UC7
+
+UC5 .> UC6 : << include >>
+
+@enduml

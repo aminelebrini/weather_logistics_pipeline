@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: weather_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  airflow:
+    image: apache/airflow:2.8.1-python3.11
+    container_name: weather_airflow
+    depends_on:
+      - postgres
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./extraction:/opt/airflow/extraction
+      - ./transformation:/opt/airflow/transformation
+      - ./load:/opt/airflow/load
+      - ./data:/opt/airflow/data
+      - ./requirements.txt:/requirements.txt
+    ports:
+      - "8080:8080"
+    command: >
+      bash -c "pip install --no-cache-dir -r /requirements.txt &&
+              airflow db init &&
+              airflow users create --username ${AIRFLOW_ADMIN_USER} --firstname Admin --lastname User --role Admin --email admin@example.com --password ${AIRFLOW_ADMIN_PASSWORD} &&
+              airflow webserver & airflow scheduler"
+
+  streamlit:
+    image: python:3.11-slim
+    container_name: weather_streamlit
+    working_dir: /app
+    depends_on:
+      - postgres
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
+    environment:
+      - DB_HOST=postgres
+      - DB_NAME=${POSTGRES_DB}
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+    command: >
+      sh -c "pip install --no-cache-dir -r requirements.txt &&
+             streamlit run dashboard/app.py --server.port=8501 --server.address=0.0.0.0"
+
+volumes:
+  postgres_data:

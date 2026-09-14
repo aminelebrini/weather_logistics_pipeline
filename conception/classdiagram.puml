@@ -1,0 +1,29 @@
+@startuml Weather_Logistics_UML
+package "Database Models (PostgreSQL)" {
+    class City{
+        - city_id: String
+        - city_name: String
+        - latitude: Float
+        - longuitude: Float
+        + region_name: String
+
+    }
+
+    class WeatherForecast {
+        - forecast_id : String
+        - city_id : String
+        + forecast_date : Date
+        + temp_max : Float
+        + temp_min : Float
+        + precipitation_sum : Float
+        + precipitation_probability_max : Float 
+        + wind_speed_max : Float
+        + wind_gusts_max : Float
+        + risk_score : Float
+        + created_at: Timestamp
+    }
+}
+
+City "1" -- "0..*" WeatherForecast : belongs_to
+
+@enduml
