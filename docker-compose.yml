@@ -1,9 +1,6 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: weather_postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -15,7 +12,6 @@ services:
 
   airflow:
     image: apache/airflow:2.8.1-python3.11
-    container_name: weather_airflow
     depends_on:
       - postgres
     environment:
@@ -32,14 +28,10 @@ services:
     ports:
       - "8080:8080"
     command: >
-      bash -c "pip install --no-cache-dir -r /requirements.txt &&
-              airflow db init &&
-              airflow users create --username ${AIRFLOW_ADMIN_USER} --firstname Admin --lastname User --role Admin --email admin@example.com --password ${AIRFLOW_ADMIN_PASSWORD} &&
-              airflow webserver & airflow scheduler"
+      bash -c "pip install --no-cache-dir -r /requirements.txt && airflow db init && airflow users create --username ${AIRFLOW_ADMIN_USER} --firstname Admin --lastname User --role Admin --email admin@example.com --password ${AIRFLOW_ADMIN_PASSWORD} || true && airflow webserver & airflow scheduler"
 
   streamlit:
     image: python:3.11-slim
-    container_name: weather_streamlit
     working_dir: /app
     depends_on:
       - postgres
@@ -56,5 +48,21 @@ services:
       sh -c "pip install --no-cache-dir -r requirements.txt &&
              streamlit run dashboard/app.py --server.port=8501 --server.address=0.0.0.0"
 
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: weather_pipline_admin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5065:80"
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
 volumes:
   postgres_data:
+  pgadmin_data:

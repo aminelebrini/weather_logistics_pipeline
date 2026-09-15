@@ -41,6 +41,7 @@ def get_weather_data():
                 "wind_gusts_10m_max",
                 "weather_code"
             ],
+            "forecast_days": 7,
             "timezone": "auto"
         }
         

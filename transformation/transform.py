@@ -28,8 +28,9 @@ def transformation_data():
         precip_sum = daily.get("precipitation_sum", [])
         precip_prob_max = daily.get("precipitation_probability_max", [])
         wind_speed_max = daily.get("wind_speed_10m_max",[])
-        wind_gusts_max = daily.get("wind_gusts_10m_max")
-        weather_code = daily.get("weather_code")
+        wind_gusts_max = daily.get("wind_gusts_10m_max",[])
+        weather_code = daily.get("weather_code", [])
+
 
         for i in range(len(dates)):
             rows.append({
