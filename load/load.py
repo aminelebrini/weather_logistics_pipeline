@@ -1,6 +1,9 @@
 import pandas as pd
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine , text
+from dotenv import load_dotenv
+from sqlalchemy.engine import URL
+load_dotenv()
 
 def risk_calcul_data():
     cleaned_data_file_path = "../data/silver/clean_weather_data.csv"
@@ -48,9 +51,79 @@ risk_calcul_data()
 
 def load_data_to_db():
 
-    data = risk_calcul_data()
-    print(data)
+    data_frame = risk_calcul_data()
+    if data_frame is None:
+        print("No data to save !!")
+        return
+
+    DB_USER = os.getenv("POSTGRES_USER","postgres")
+    DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
+    DB_HOST = os.getenv("POSTGRES_HOST", "localhost")
+    DB_PORT = os.getenv("POSTGRES_PORT", "5432")
+    DB_NAME = os.getenv("POSTGRES_DB", "weather_db")
 
     
+    print(f"Connecting to PostgreSQL database at {DB_HOST}:{DB_PORT} with user {DB_USER} and database {DB_NAME} and password {DB_PASSWORD} ...")
+
+    try:
+        database_url = URL.create(
+            drivername="postgresql+psycopg2",
+            username=DB_USER,
+            password=DB_PASSWORD,
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+        )
+
+        engine = create_engine(database_url)
+        with engine.connect() as conn:
+            print("Connection successful!")
+    except Exception as e:
+        print(f"Error connecting to the database: {e}")
+        return
+
+    unique_cities = data_frame[["city","lat", "lng","admin_name"]].drop_duplicates().reset_index(drop=True)
+
+    
+
+    with engine.begin() as conn:
+
+        # for _, row in unique_cities.iterrows():
+        #     conn.execute(text("""
+        #         INSERT INTO dim_cities (city_name, lat, lang, region_name)
+        #         VALUES (:city, :lat, :lang, :region)
+        #         ON CONFLICT (city_name) DO UPDATE 
+        #         SET lat = EXCLUDED.lat, 
+        #             lang = EXCLUDED.lang, 
+        #             region_name = EXCLUDED.region_name;
+        #         """),{
+        #             "city": row["city"],
+        #             "lat": row.get("lat"),
+        #             "lang": row.get("lng"),
+        #             "region": row.get("admin_name")
+        #         })
+
+        
+        cities_db = pd.read_sql(
+            "SELECT city_id, city_name FROM dim_cities;", conn
+        )
+
+        city_map = dict(zip(cities_db["city_name"], cities_db["city_id"]))
+
+        data_frame["city_id"] = data_frame["city"].map(city_map)
+
+        forecast = data_frame[["city_id", "forecast_date", "temp_max", "temp_min", "precipitation_sum", "wind_speed_max", "precipitation_probability_max", "risk_score", "risk_level"]]
+
+        # print(forecast)
+        forecast.to_sql(
+            name="weather_forecasts",
+            con=engine,
+            if_exists="append", 
+            index=False,  
+            method="multi",
+            chunksize=1000, 
+        )
+
+        print("Data loaded successfully!")
 
 load_data_to_db()
