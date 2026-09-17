@@ -1,4 +1,5 @@
 import pandas as pd
+import plotly.express as px
 from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
 import streamlit as st
@@ -31,7 +32,7 @@ print(f"Connecting to PostgreSQL database at {DB_HOST}:{DB_PORT} with user {DB_U
 def fetch_data_from_db(url):
     try:
         engine = create_engine(url)
-        query_sql = """SELECT c.city_name, w.forecast_date, w.temp_min, w.precipitation_sum, w.wind_speed_max, w.precipitation_probability_max, w.temp_max, w.risk_score, w.risk_level FROM weather_forecasts as w JOIN dim_cities as c ON w.city_id = c.city_id;"""
+        query_sql = """SELECT c.city_name, c.lat, c.lang, w.forecast_date, w.temp_min, w.precipitation_sum, w.wind_speed_max, w.precipitation_probability_max, w.temp_max, w.risk_score, w.risk_level FROM weather_forecasts as w JOIN dim_cities as c ON w.city_id = c.city_id;"""
         df = pd.read_sql(query_sql, engine)
         return df
     except Exception as e:
@@ -77,3 +78,32 @@ else:
     st.warning("Please select at least one forecast date from the sidebar. !!!")
 
 st.dataframe(filtered_df, use_container_width=True)
+
+
+if not filtered_df.empty and 'lat' in filtered_df.columns:
+
+  fig = px.scatter_map(
+      filtered_df,
+      lat="lat",
+      lon="lang",
+      size="risk_score", 
+      color="risk_level",  
+      color_discrete_map={
+          "LOW": "green",
+          "MEDIUM": "orange",
+          "HIGH": "red",
+      },  
+      hover_name="city_name",
+      hover_data=["temp_max", "wind_speed_max", "risk_score"],
+      zoom=5, 
+      center={"lat": 31.7917, "lon": -7.0926}, 
+      map_style="open-street-map", 
+  )
+
+  fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, height=450)
+
+  st.plotly_chart(fig, use_container_width=True)
+else:
+  st.warning(
+      "⚠️ Map data unavailable. Ensure latitude and longitude columns are included in your SQL query."
+  )   
