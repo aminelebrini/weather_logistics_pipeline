@@ -1,29 +1,47 @@
 import requests
 import pandas as pd
 import json
+from pathlib import Path
+import json
+import logging
+from datetime import datetime
+
+def logs_json(level, message, module_name="extraction", **kwargs):
+    log_entry = {
+        "timestamp": datetime.now().isoformat(),
+        "level": level,
+        "message": message,
+        "module": module_name,
+        "extra": kwargs
+    }
+    print(json.dumps(log_entry))
 def get_cities_data():
 
     try:
+        BASE_DIR = Path(__file__).resolve().parent.parent
+        file_path = BASE_DIR / "data" / "bronze" / "my_cities.csv"
+        file_path.parent.mkdir(parents=True, exist_ok=True)
         url = "https://simplemaps.com/static/data/country-cities/ma/ma.csv"
         
         response = requests.get(url)
         
         data = response.content
 
-        with open("../data/bronze/my_cities.csv", "wb") as file:
+        with open(file_path, "wb") as file:
             file.write(data)
 
-        print("File saved successfully in data/bronze/my_cities.csv !!!")
+        logs_json("INFO", "Success to fetching cities data from the API !!!", path=str(file_path))
     except requests.exceptions.RequestException as e:
-        print(f"error during request {e} !")
-
-get_cities_data()
-
+        logs_json("ERROR", f"Error fetching cities data from the API: {e}", path=str(file_path))
 def get_weather_data():
-    csv_path = "../data/bronze/my_cities.csv"
-    df = pd.read_csv(csv_path)
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    file_path = BASE_DIR / "data" / "bronze" / "my_cities.csv"
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    json_file_path = BASE_DIR / "data" / "bronze" / "weather_data.json"
+    json_file_path.parent.mkdir(parents=True, exist_ok=True)
+    df = pd.read_csv(file_path)
 
-    df_small = df.head(10)
+    df_small = df.head(100)
 
     weather_list = []
 
@@ -51,14 +69,15 @@ def get_weather_data():
 
             data["city"] = row["city"]
             weather_list.append(data)
-            print(weather_list)
+            logs_json("INFO", f"Success fetching weather data for {row['city']} !!!", city=row['city'])
 
         except requests.exceptions.RequestException as e:
-            print(f"Error fetching {row['city']}: {e}")
+            logs_json("ERROR", f"Error fetching weather data for {row['city']}: {e}", city=row['city'])
 
-    with open("../data/bronze/weather_data.json", "w") as f:
+    with open(json_file_path, "w") as f:
         json.dump(weather_list, f, indent=2)
 
     print("✅ Finished and saved to data/bronze/weather_raw.json!")
 
-get_weather_data()
+if __name__ == "__main__":
+    get_cities_data()

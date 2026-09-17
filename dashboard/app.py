@@ -12,11 +12,11 @@ st.set_page_config(page_title="Weather Logistics Dashboard", layout="wide")
 st.title("Weather Logistics Risk Dashboard")
 st.markdown("Real-time weather risk analytics for delivery planning.")
 
-DB_HOST = os.environ.get("POSTGRES_HOST_A", "postgres")
+DB_HOST = os.environ.get("POSTGRES_HOST_A", os.environ.get("DB_HOST", "postgres"))
 DB_PORT = os.environ.get("POSTGRES_PORT", "5432")
-DB_NAME = os.environ.get("POSTGRES_DB", "weather_db")
-DB_USER = os.environ.get("POSTGRES_USER", "amine_amaf")
-DB_PASS = os.environ.get("POSTGRES_PASSWORD", "code:12345@")
+DB_NAME = os.environ.get("POSTGRES_DB", os.environ.get("DB_NAME", "weather_db"))
+DB_USER = os.environ.get("POSTGRES_USER", os.environ.get("DB_USER", "amine_amaf"))
+DB_PASS = os.environ.get("POSTGRES_PASSWORD", os.environ.get("DB_PASSWORD", "code:12345@"))
 
 database_url = URL.create(
             drivername="postgresql+psycopg2",
@@ -41,7 +41,7 @@ def fetch_data_from_db(url):
 
 df = fetch_data_from_db(database_url)
 
-col1, col2, col3 = st.columns(3)
+col1, col2 = st.columns(2)
 with col1:
     st.header("Precipitation Trends by City")
     st.bar_chart(data=df, x="city_name", y="precipitation_sum", use_container_width=False)
@@ -50,9 +50,9 @@ with col2:
     st.header("Temperature Trends by City")
     st.line_chart(data=df, x="city_name" , y=["temp_min", "temp_max"], use_container_width=False)
 
-with col3:
-    st.header("Wind Speed Trends by City")
-    st.line_chart(data=df, x="city_name", y="wind_speed_max", use_container_width=False)
+
+st.header("Wind Speed Trends by City")
+st.line_chart(data=df, x="city_name", y="wind_speed_max", use_container_width=False)
 
 
 df["forecast_date"] = pd.to_datetime(df["forecast_date"]).dt.date
@@ -62,7 +62,7 @@ filtered_df = df.copy()
 all_cities = df['city_name'].unique()
 selected_cities = st.sidebar.multiselect("Select Cities", options=all_cities, default=all_cities.unique())
 selected_risk_levels = st.sidebar.multiselect("Select RISK LEVELS", options=["LOW", "MEDIUM", "HIGH"], default=df['risk_level'].unique())
-selected_dates = st.sidebar.multiselect("Select Forecast Dates", options=df['forecast_date'].unique(), default=df['forecast_date'].unique()[0])
+selected_dates = st.sidebar.multiselect("Select Forecast Dates", options=df['forecast_date'].unique(), default=[df['forecast_date'].min(), df['forecast_date'].max()])
 if selected_cities:
     filtered_df = df[df["city_name"].isin(selected_cities)]
 else:
@@ -106,4 +106,4 @@ if not filtered_df.empty and 'lat' in filtered_df.columns:
 else:
   st.warning(
       "⚠️ Map data unavailable. Ensure latitude and longitude columns are included in your SQL query."
-  )   
+  )

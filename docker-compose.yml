@@ -9,20 +9,28 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./shema/shema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
 
   airflow:
     image: apache/airflow:2.8.1-python3.11
     depends_on:
       - postgres
     environment:
+      - PYTHONPATH=/opt/airflow
       - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://amine_amaf:code%3A12345%40@postgres:5432/weather_db
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
     volumes:
       - ./dags:/opt/airflow/dags
       - ./extraction:/opt/airflow/extraction
       - ./transformation:/opt/airflow/transformation
       - ./load:/opt/airflow/load
+      - ./shema:/opt/airflow/shema
       - ./data:/opt/airflow/data
       - ./requirements.txt:/requirements.txt
     ports:
@@ -43,6 +51,8 @@ services:
       - DB_NAME=${POSTGRES_DB}
       - DB_USER=${POSTGRES_USER}
       - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_HOST=postgres
+      - DB_PORT=5432
     command: >
       sh -c "pip install --no-cache-dir -r requirements.txt &&
              streamlit run dashboard/app.py --server.port=8501 --server.address=0.0.0.0"
