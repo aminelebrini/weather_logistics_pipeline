@@ -41,6 +41,56 @@ def fetch_data_from_db(url):
 
 df = fetch_data_from_db(database_url)
 
+col3, col4 = st.columns(2)
+with col3:
+    st.title("HIGH RISK ALERTS")
+    high_risk_df = df[df["risk_level"] == "HIGH"]
+    if not high_risk_df.empty:
+        st.dataframe(high_risk_df, use_container_width=True, color="red")
+    else:
+        st.info("No high-risk alerts at the moment.")
+
+with col4:
+    st.title("top City with Highest temperature")
+    query1 = """select c.city_name , MAX(w.temp_max) as temperature_max from dim_cities c join weather_forecasts w
+        on c.city_id = w.city_id group by c.city_name order by temperature_max DESC"""
+    df1 = pd.read_sql(query1, create_engine(database_url))
+    if not df1.empty:
+        col1, col2, col3 = st.columns(3)
+        for i, row in df1.head(3).iterrows():
+            col1.metric("Highest Temperature City", row["city_name"])
+            col2.metric("Highest Temperature", f"{row['temperature_max']} °C")
+            col3.metric(label="Statut", value="HIGH", delta="ALERT TEMPERATURE" , delta_color="inverse",)
+    else:
+        st.info("No data available.")
+
+col5, col6 = st.columns(2)
+with col5:
+    st.title("top City with Highest Precipitation")
+    query2 = """select c.city_name , MAX(w.precipitation_sum) as precipitation_max from dim_cities c join weather_forecasts w
+        on c.city_id = w.city_id group by c.city_name order by precipitation_max DESC"""
+    df2 = pd.read_sql(query2, create_engine(database_url))
+    if not df2.empty:
+        col1, col2, col3 = st.columns(3)
+        for i, row in df2.head(3).iterrows():
+            col1.metric("Highest Precipitation City", row["city_name"])
+            col2.metric("Highest Precipitation", f"{row['precipitation_max']} mm")
+            col3.metric(label="Statut", value="HIGH", delta="ALERT PRECIPITATION" , delta_color="inverse",)
+    else:
+        st.info("No data available.")
+
+with col6:
+    st.title("top city with Highest Risk Score")
+    query3 = """select c.city_name , MAX(w.risk_score) as risk_score from dim_cities c join weather_forecasts w
+        on c.city_id = w.city_id group by c.city_name order by risk_score DESC"""
+    df3 = pd.read_sql(query3, create_engine(database_url))
+    if not df3.empty:
+        col1, col2, col3 = st.columns(3)
+        for i, row in df3.head(3).iterrows():
+            col1.metric("Highest Risk Score City", row["city_name"])
+            col2.metric("Highest Risk Score", f"{row['risk_score']}")
+    else:
+        st.info("No data available.")
 col1, col2 = st.columns(2)
 with col1:
     st.header("Precipitation Trends by City")
@@ -76,8 +126,6 @@ if selected_dates:
     filtered_df = df[df["forecast_date"].isin(selected_dates)]
 else:
     st.warning("Please select at least one forecast date from the sidebar. !!!")
-
-st.dataframe(filtered_df, use_container_width=True)
 
 
 if not filtered_df.empty and 'lat' in filtered_df.columns:
