@@ -63,7 +63,35 @@ with col4:
             col3.metric(label="Statut", value="HIGH", delta="ALERT TEMPERATURE" , delta_color="inverse",)
     else:
         st.info("No data available.")
+col7, col8 = st.columns(2)
+with col7:
+    st.title("top period with Highest Risk Score")
+    query4 = """select DATE_TRUNC('week', forecast_date::DATE)::DATE as start_periode,
+        (DATE_TRUNC('week', forecast_date::DATE) + interval '6 days') as end_periode,
+        AVG(risk_score) as average_risk
+        from weather_forecasts group by DATE_TRUNC('week', forecast_date::DATE) order by average_risk DESC"""
 
+    df4 = pd.read_sql(query4, create_engine(database_url))
+    if not df4.empty:
+        col1, col2, col3 = st.columns(3)
+        for i, row in df4.head(3).iterrows():
+            col1.metric("Highest Risk Score Period", f"{row['start_periode']} to {row['end_periode']}")
+            col2.metric("Average Risk Score", f"{row['average_risk']:.2f}")
+            col3.metric(label="Statut", value="HIGH", delta="ALERT RISK SCORE" , delta_color="inverse",)
+    else:
+        st.info("No data available.")
+with col8:
+    st.title("top period risk for each city")
+    query5 = """select c.city_name,  DATE_TRUNC('week', w.forecast_date::DATE)::DATE as start_periode,
+        (DATE_TRUNC('week', w.forecast_date::DATE) + interval '6 days') as end_periode,
+        AVG(w.risk_score) as average_risk from weather_forecasts as w join dim_cities as c
+        on c.city_id = w.city_id group by DATE_TRUNC('week', w.forecast_date::DATE), c.city_name order by average_risk DESC"""
+
+    df5 = pd.read_sql(query5, create_engine(database_url))
+    if not df5.empty:
+        st.dataframe(df5, use_container_width=True)
+    else:
+        st.info("No data available.")
 col5, col6 = st.columns(2)
 with col5:
     st.title("top City with Highest Precipitation")
@@ -91,6 +119,7 @@ with col6:
             col2.metric("Highest Risk Score", f"{row['risk_score']}")
     else:
         st.info("No data available.")
+
 col1, col2 = st.columns(2)
 with col1:
     st.header("Precipitation Trends by City")

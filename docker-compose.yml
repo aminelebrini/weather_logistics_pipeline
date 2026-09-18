@@ -9,7 +9,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./shema/shema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./schema/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
 
   airflow:
     image: apache/airflow:2.8.1-python3.11
@@ -30,7 +30,7 @@ services:
       - ./extraction:/opt/airflow/extraction
       - ./transformation:/opt/airflow/transformation
       - ./load:/opt/airflow/load
-      - ./shema:/opt/airflow/shema
+      - ./schema:/opt/airflow/schema
       - ./data:/opt/airflow/data
       - ./requirements.txt:/requirements.txt
     ports:
