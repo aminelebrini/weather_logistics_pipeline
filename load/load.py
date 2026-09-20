@@ -97,7 +97,7 @@ def risk_calcul_data():
 
 def initialize_database_schema(engine):
     BASE_DIR = Path(__file__).resolve().parent.parent
-    schema_path = BASE_DIR / "shema" / "shema.sql"
+    schema_path = BASE_DIR / "schema" / "schema.sql"
 
     if schema_path.exists():
         schema_sql = schema_path.read_text(encoding="utf-8")
@@ -181,6 +181,7 @@ def load_data_to_db():
         )
 
         city_map = dict(zip(cities_db["city_name"], cities_db["city_id"]))
+        
 
         data_frame["city_id"] = data_frame["city"].map(city_map)
         missing_city_ids = data_frame[data_frame["city_id"].isna()]["city"].drop_duplicates().tolist()
