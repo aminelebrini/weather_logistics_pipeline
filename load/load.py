@@ -9,36 +9,36 @@ import logging
 import json
 load_dotenv()
 
-SCHEMA_SQL = """
-CREATE TABLE IF NOT EXISTS dim_cities (
-    city_id SERIAL PRIMARY KEY,
-    city_name VARCHAR(100) UNIQUE NOT NULL,
-    lat FLOAT,
-    lang FLOAT,
-    region_name VARCHAR(100)
-);
+# SCHEMA_SQL = """
+# CREATE TABLE IF NOT EXISTS dim_cities (
+#     city_id SERIAL PRIMARY KEY,
+#     city_name VARCHAR(100) UNIQUE NOT NULL,
+#     lat FLOAT,
+#     lang FLOAT,
+#     region_name VARCHAR(100)
+# );
 
-CREATE TABLE IF NOT EXISTS weather_forecasts (
-    id SERIAL PRIMARY KEY,
-    city_id INTEGER NOT NULL REFERENCES dim_cities(city_id) ON DELETE CASCADE,
-    forecast_date DATE NOT NULL,
-    temp_max FLOAT,
-    temp_min FLOAT,
-    precipitation_sum FLOAT,
-    precipitation_probability_max FLOAT,
-    wind_speed_max FLOAT,
-    wind_gusts_max FLOAT,
-    risk_score FLOAT,
-    risk_level VARCHAR(20),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+# CREATE TABLE IF NOT EXISTS weather_forecasts (
+#     id SERIAL PRIMARY KEY,
+#     city_id INTEGER NOT NULL REFERENCES dim_cities(city_id) ON DELETE CASCADE,
+#     forecast_date DATE NOT NULL,
+#     temp_max FLOAT,
+#     temp_min FLOAT,
+#     precipitation_sum FLOAT,
+#     precipitation_probability_max FLOAT,
+#     wind_speed_max FLOAT,
+#     wind_gusts_max FLOAT,
+#     risk_score FLOAT,
+#     risk_level VARCHAR(20),
+#     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+# );
 
-ALTER TABLE weather_forecasts
-    ADD COLUMN IF NOT EXISTS risk_level VARCHAR(20);
+# ALTER TABLE weather_forecasts
+#     ADD COLUMN IF NOT EXISTS risk_level VARCHAR(20);
 
-ALTER TABLE weather_forecasts
-    ADD COLUMN IF NOT EXISTS wind_gusts_max FLOAT;
-"""
+# ALTER TABLE weather_forecasts
+#     ADD COLUMN IF NOT EXISTS wind_gusts_max FLOAT;
+# """
 
 
 def logs_json(level, message, module_name="load", **kwargs):
@@ -95,27 +95,27 @@ def risk_calcul_data():
 
     return data_frame
 
-def initialize_database_schema(engine):
-    BASE_DIR = Path(__file__).resolve().parent.parent
-    schema_path = BASE_DIR / "schema" / "schema.sql"
+# def initialize_database_schema(engine):
+#     BASE_DIR = Path(__file__).resolve().parent.parent
+#     schema_path = BASE_DIR / "schema" / "schema.sql"
 
-    if schema_path.exists():
-        schema_sql = schema_path.read_text(encoding="utf-8")
-    else:
-        logs_json("WARNING", f"Schema file not found, using built-in schema: {schema_path}", "load.py")
-        schema_sql = SCHEMA_SQL
+#     if schema_path.exists():
+#         schema_sql = schema_path.read_text(encoding="utf-8")
+#     else:
+#         logs_json("WARNING", f"Schema file not found, using built-in schema: {schema_path}", "load.py")
+#         schema_sql = SCHEMA_SQL
 
-    try:
-        with engine.begin() as conn:
-            for statement in schema_sql.split(";"):
-                statement = statement.strip()
-                if statement:
-                    conn.execute(text(statement))
-        logs_json("INFO", "Database schema initialized successfully!", "load.py")
-        return True
-    except Exception as e:
-        logs_json("ERROR", f"Error initializing database schema: {e}", "load.py")
-        return False
+#     try:
+#         with engine.begin() as conn:
+#             for statement in schema_sql.split(";"):
+#                 statement = statement.strip()
+#                 if statement:
+#                     conn.execute(text(statement))
+#         logs_json("INFO", "Database schema initialized successfully!", "load.py")
+#         return True
+#     except Exception as e:
+#         logs_json("ERROR", f"Error initializing database schema: {e}", "load.py")
+#         return False
 
 def load_data_to_db():
 
@@ -148,9 +148,6 @@ def load_data_to_db():
             logs_json("INFO", "Connection successful!", "load.py")
     except Exception as e:
         logs_json("ERROR", f"Error connecting to the database: {e}", "load.py")
-        return
-
-    if not initialize_database_schema(engine):
         return
 
     unique_cities = data_frame[["city","lat", "lng","admin_name"]].drop_duplicates().reset_index(drop=True)
